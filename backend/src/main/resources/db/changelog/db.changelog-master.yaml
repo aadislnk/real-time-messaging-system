@@ -18,3 +18,13 @@ databaseChangeLog:
             relativeToChangelogFile: false
             splitStatements: true
             stripComments: true
+
+  - changeSet:
+      id: 003-create-audit-event-schema
+      author: sandesh
+      changes:
+        - sqlFile:
+            path: db/changelog/003-create-audit-event-schema.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true
