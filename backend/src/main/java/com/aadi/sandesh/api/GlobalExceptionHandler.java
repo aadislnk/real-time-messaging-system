@@ -59,8 +59,6 @@ public class GlobalExceptionHandler {
                 violations
         );
         return ResponseEntity.badRequest().body(body);
-       // return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        // return error(HttpStatus.BAD_REQUEST, ex.getMessage(), "BAD_REQUEST", request);
     }
 
 
