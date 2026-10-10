@@ -41,3 +41,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local tools and configurations
+.postman/
+postman/
+
+# Logs
+*.log
+logs/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini
