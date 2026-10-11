@@ -7,6 +7,7 @@ import com.aadi.sandesh.exception.ForbiddenException;
 import com.aadi.sandesh.exception.NotFoundException;
 import com.aadi.sandesh.exception.RateLimitExceededException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,6 +21,8 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(NotFoundException.class)
     ResponseEntity<ApiError> handleNotFoundException(NotFoundException ex, HttpServletRequest request) {
@@ -64,6 +67,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> handleGenericException(Exception ex, HttpServletRequest request) {
+        logger.error(ex.getMessage(),ex);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An Unexpected Error Occurred", "INTERNAL_SERVER_ERROR", request);
     }
 
