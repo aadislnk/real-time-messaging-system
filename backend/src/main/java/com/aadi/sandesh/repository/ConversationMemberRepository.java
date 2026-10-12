@@ -14,7 +14,9 @@ import java.util.UUID;
 
 public interface ConversationMemberRepository extends JpaRepository<ConversationMember, UUID> {
 
-    Optional<ConversationMember> findByConversationIdAndUserId(UUID conversationId, UUID userId);
+    Optional<ConversationMember> findByConversationIdAndUserId(
+            UUID conversationId, UUID userId
+    );
 
     @Query("""
                 SELECT new com.aadi.sandesh.api.dto.MemberResponse(
@@ -29,21 +31,32 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
             @Param("conversationId") UUID conversationId
     );
 
-
     @Query("""
-                SELECT new com.aadi.sandesh.api.dto.ConversationMemberResponse(
-                    cm.conversationId, cm.userId, u.displayName, cm.role, cm.lastReadSequence,
-                                cm.hiddenAfterSequence
-                    )
-                    FROM ConversationMember cm
-                        JOIN UserAccount u
-                            on u.id = cm.userId
-                                WHERE cm.conversationId IN :conversationIds
-            """)
+    SELECT new com.aadi.sandesh.api.dto.ConversationMemberResponse(
+        cm.conversationId,
+        cm.userId,
+        u.displayName,
+        cm.role,
+        cm.lastReadSequence,
+        cm.hiddenAfterSequence
+    )
+    FROM ConversationMember cm
+    JOIN UserAccount u ON u.id = cm.userId
+    WHERE cm.conversationId IN :conversationIds
+    """)
     List<ConversationMemberResponse> findConversationMemberResponses(
             @Param("conversationIds") Collection<UUID> conversationIds
     );
 
     boolean existsByConversationIdAndUserId(UUID conversationId, UUID userId);
 
+    @Query("""
+                select cm.userId from ConversationMember cm
+                    where cm.conversationId = :conversationId
+                        and cm.userId <> :senderId
+            """)
+    List<UUID> findRecipientIds(
+            UUID conversationId,
+            UUID senderId
+    );
 }

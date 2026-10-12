@@ -1,14 +1,14 @@
 package com.aadi.sandesh.service;
 
 import com.aadi.sandesh.api.dto.*;
-import com.aadi.sandesh.domain.Conversation;
-import com.aadi.sandesh.domain.ConversationMember;
-import com.aadi.sandesh.domain.ConversationType;
-import com.aadi.sandesh.domain.MemberRole;
+import com.aadi.sandesh.domain.*;
+import com.aadi.sandesh.domain.enums.ConversationType;
+import com.aadi.sandesh.domain.enums.MemberRole;
 import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.NotFoundException;
 import com.aadi.sandesh.repository.ConversationMemberRepository;
 import com.aadi.sandesh.repository.ConversationRepository;
+import com.aadi.sandesh.repository.MessageRepository;
 import com.aadi.sandesh.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,14 +27,13 @@ public class ConversationService {
     private final UserAccountRepository userAccountRepository;
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository convMemberRepository;
+
     private final MembershipService membershipService;
 
     @Transactional
-    public ConversationResponse create(
-            UUID creatorId,
-            CreateConversationRequest request
-    ) {
+    public ConversationResponse create(UUID creatorId, CreateConversationRequest request) {
         var memberIds = new LinkedHashSet<>(request.memberIds());
+
         memberIds.add(creatorId);
 
         if (request.type() == ConversationType.DIRECT && memberIds.size() != 2) {
@@ -50,27 +49,23 @@ public class ConversationService {
         }
 
         if (request.type() == ConversationType.DIRECT) {
-            var existingConversation = findDuplicateDirectConversation(memberIds);
+            var existingConversationOptional = findDuplicateDirectConversation(memberIds);
 
-            if (existingConversation.isPresent()) {
-                return toResponse(existingConversation.get());
+            if (existingConversationOptional.isPresent()) {
+                return toResponse(existingConversationOptional.get());
             }
         }
 
         var users = userAccountRepository.findAllById(memberIds);
 
         if (users.size() != memberIds.size()) {
-            throw new NotFoundException(
-                    "One or more conversation members do not exist"
-            );
+            throw new NotFoundException("One or more conversation members do not exist");
         }
 
         var conversation = conversationRepository.save(
                 new Conversation(
                         request.type(),
-                        request.type() == ConversationType.GROUP
-                                ? request.title()
-                                : null,
+                        request.type() == ConversationType.GROUP ? request.title() : null,
                         creatorId
                 )
         );
@@ -82,8 +77,7 @@ public class ConversationService {
                         memberId.equals(creatorId)
                                 ? MemberRole.OWNER
                                 : MemberRole.MEMBER
-                ))
-                .toList();
+                )).toList();
 
         convMemberRepository.saveAll(members);
 
@@ -98,9 +92,7 @@ public class ConversationService {
         membershipService.requireMember(conversationId, userId);
 
         var conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() ->
-                        new NotFoundException("Conversation not found")
-                );
+                .orElseThrow(() -> new NotFoundException("Conversation not found"));
 
         return toResponse(conversation);
     }
@@ -113,13 +105,10 @@ public class ConversationService {
             return List.of();
         }
 
-        var conversationIds = conversations.stream()
-                .map(Conversation::getId)
-                .toList();
+        var conversationsIds = conversations.stream()
+                .map(Conversation::getId).toList();
 
-        var members = convMemberRepository.findConversationMemberResponses(
-                conversationIds
-        );
+        var members = convMemberRepository.findConversationMemberResponses(conversationsIds);
 
         var membersByConversation = members.stream()
                 .collect(
@@ -130,19 +119,20 @@ public class ConversationService {
 
         return conversations.stream()
                 .map(conversation -> {
-                    var conversationMembers = membersByConversation.getOrDefault(
-                            conversation.getId(),
-                            List.of()
-                    );
+                    var conversationMembers =
+                            membersByConversation.getOrDefault(
+                                    conversation.getId(),
+                                    List.of()
+                            );
 
-                    var memberResponses = conversationMembers.stream()
-                            .map(member -> new MemberResponse(
-                                    member.userId(),
-                                    member.displayName(),
-                                    member.role(),
-                                    member.lastReadSequence()
-                            ))
-                            .toList();
+                    var memberResponses =
+                            conversationMembers.stream()
+                                    .map(member -> new MemberResponse(
+                                            member.userId(),
+                                            member.displayName(),
+                                            member.role(),
+                                            member.lastReadSequence()
+                                    )).toList();
 
                     return new ConversationResponse(
                             conversation.getId(),
@@ -150,11 +140,16 @@ public class ConversationService {
                             conversation.getTitle(),
                             conversation.getCreatedBy(),
                             conversation.getCreatedAt(),
-                            memberResponses,
-                            null
+                            memberResponses
                     );
-                })
-                .toList();
+                }).toList();
+
+    }
+
+    private Optional<Conversation> findDuplicateDirectConversation(
+            LinkedHashSet<UUID> memberIds
+    ) {
+        return conversationRepository.findExistingDirectConversation(ConversationType.DIRECT, memberIds);
     }
 
     @Transactional
@@ -166,11 +161,9 @@ public class ConversationService {
         membershipService.requireManager(conversationId, actorId);
 
         var conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() ->
-                        new NotFoundException("Conversation not found")
-                );
+                .orElseThrow(() -> new NotFoundException("Conversation not found"));
 
-        if (conversation.getType() == ConversationType.DIRECT) {
+        if (conversation.getType().equals(ConversationType.DIRECT)) {
             throw new ConflictException(
                     "Create a group conversation instead of adding to a direct conversation"
             );
@@ -180,18 +173,11 @@ public class ConversationService {
             throw new NotFoundException("User not found");
         }
 
-        if (convMemberRepository.existsByConversationIdAndUserId(
-                conversationId,
-                request.userId()
-        )) {
+        if (convMemberRepository.existsByConversationIdAndUserId(conversationId, request.userId())) {
             throw new ConflictException("User is already a member");
         }
 
-        var newMember = new ConversationMember(
-                conversationId,
-                request.userId(),
-                request.role()
-        );
+        var newMember = new ConversationMember(conversationId, request.userId(), request.role());
 
         convMemberRepository.save(newMember);
 
@@ -207,11 +193,9 @@ public class ConversationService {
         membershipService.requireManager(conversationId, actorId);
 
         var conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() ->
-                        new NotFoundException("Conversation not found")
-                );
+                .orElseThrow(() -> new NotFoundException("Conversation not found"));
 
-        if (conversation.getType() == ConversationType.DIRECT) {
+        if (conversation.getType().equals(ConversationType.DIRECT)) {
             throw new ConflictException(
                     "Direct conversation do not support member removal"
             );
@@ -223,11 +207,9 @@ public class ConversationService {
             );
         }
 
-        var targetMember = convMemberRepository
-                .findByConversationIdAndUserId(conversationId, memberUserId)
-                .orElseThrow(() ->
-                        new NotFoundException("Member not found")
-                );
+        var targetMember =
+                convMemberRepository.findByConversationIdAndUserId(conversationId, memberUserId)
+                        .orElseThrow(() -> new NotFoundException("Member not found"));
 
         if (targetMember.getRole() == MemberRole.OWNER) {
             throw new ConflictException(
@@ -249,11 +231,9 @@ public class ConversationService {
         membershipService.requireManager(conversationId, actorId);
 
         var conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() ->
-                        new NotFoundException("Conversation not found")
-                );
+                .orElseThrow(() -> new NotFoundException("Conversation not found"));
 
-        if (conversation.getType() == ConversationType.DIRECT) {
+        if (conversation.getType().equals(ConversationType.DIRECT)) {
             throw new ConflictException(
                     "Only group conversations can be updated"
             );
@@ -264,19 +244,8 @@ public class ConversationService {
         return toResponse(conversation);
     }
 
-    private Optional<Conversation> findDuplicateDirectConversation(
-            LinkedHashSet<UUID> memberIds
-    ) {
-        return conversationRepository.findExistingDirectConversation(
-                ConversationType.DIRECT,
-                memberIds
-        );
-    }
-
     private ConversationResponse toResponse(Conversation conversation) {
-        var memberResponses = convMemberRepository.findMemberResponses(
-                conversation.getId()
-        );
+        var memberResponses = convMemberRepository.findMemberResponses(conversation.getId());
 
         return new ConversationResponse(
                 conversation.getId(),
@@ -284,8 +253,7 @@ public class ConversationService {
                 conversation.getTitle(),
                 conversation.getCreatedBy(),
                 conversation.getCreatedAt(),
-                memberResponses,
-                null
+                memberResponses
         );
     }
 }

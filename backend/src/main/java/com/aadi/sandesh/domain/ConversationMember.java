@@ -1,6 +1,7 @@
 package com.aadi.sandesh.domain;
 
 
+import com.aadi.sandesh.domain.enums.MemberRole;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

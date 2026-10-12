@@ -1,5 +1,6 @@
 package com.aadi.sandesh.domain;
 
+import com.aadi.sandesh.domain.enums.ConversationType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

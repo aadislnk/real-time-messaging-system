@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+
 @RestController
 @RequestMapping("/api/conversations")
 @RequiredArgsConstructor
@@ -72,5 +73,4 @@ public class ConversationController {
     ) {
         return conversationService.update(currentUser.id(authentication), conversationId, request);
     }
-
 }

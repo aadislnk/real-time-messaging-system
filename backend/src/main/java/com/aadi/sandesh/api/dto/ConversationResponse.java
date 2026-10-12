@@ -1,6 +1,6 @@
 package com.aadi.sandesh.api.dto;
 
-import com.aadi.sandesh.domain.ConversationType;
+import com.aadi.sandesh.domain.enums.ConversationType;
 
 import java.time.Instant;
 import java.util.List;
@@ -12,7 +12,6 @@ public record ConversationResponse(
         String title,
         UUID createdBy,
         Instant createdAt,
-        List<MemberResponse> members,
-        String latestMessagePreview
+        List<MemberResponse> members
 ) {
 }
