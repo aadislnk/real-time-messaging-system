@@ -1,7 +1,7 @@
 package com.aadi.sandesh.service;
 
-import com.aadi.sandesh.api.dto.MessageResponse;
-import com.aadi.sandesh.api.dto.SendMessageRequest;
+import com.aadi.sandesh.dto.message.MessageResponse;
+import com.aadi.sandesh.dto.message.SendMessageRequest;
 import com.aadi.sandesh.domain.Message;
 import com.aadi.sandesh.domain.MessageReceipt;
 import com.aadi.sandesh.domain.enums.MessageType;

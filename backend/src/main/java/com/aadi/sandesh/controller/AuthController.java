@@ -1,8 +1,8 @@
-package com.aadi.sandesh.api;
+package com.aadi.sandesh.controller;
 
-import com.aadi.sandesh.api.dto.AuthResponse;
-import com.aadi.sandesh.api.dto.LoginRequest;
-import com.aadi.sandesh.api.dto.RegisterRequest;
+import com.aadi.sandesh.dto.auth.AuthResponse;
+import com.aadi.sandesh.dto.auth.LoginRequest;
+import com.aadi.sandesh.dto.auth.RegisterRequest;
 import com.aadi.sandesh.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

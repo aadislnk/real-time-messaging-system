@@ -1,4 +1,4 @@
-package com.aadi.sandesh.api.dto;
+package com.aadi.sandesh.dto.conversation;
 
 import jakarta.validation.constraints.Size;
 

@@ -1,4 +1,4 @@
-package com.aadi.sandesh.api.dto;
+package com.aadi.sandesh.dto.message;
 
 
 import com.aadi.sandesh.domain.enums.ReceiptType;

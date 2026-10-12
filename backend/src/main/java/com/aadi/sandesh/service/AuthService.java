@@ -1,8 +1,8 @@
 package com.aadi.sandesh.service;
 
-import com.aadi.sandesh.api.dto.AuthResponse;
-import com.aadi.sandesh.api.dto.LoginRequest;
-import com.aadi.sandesh.api.dto.RegisterRequest;
+import com.aadi.sandesh.dto.auth.AuthResponse;
+import com.aadi.sandesh.dto.auth.LoginRequest;
+import com.aadi.sandesh.dto.auth.RegisterRequest;
 import com.aadi.sandesh.domain.UserAccount;
 import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.ForbiddenException;

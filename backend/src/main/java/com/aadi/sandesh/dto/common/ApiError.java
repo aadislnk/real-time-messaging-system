@@ -1,4 +1,4 @@
-package com.aadi.sandesh.api.dto;
+package com.aadi.sandesh.dto.common;
 
 import java.time.Instant;
 import java.util.List;

@@ -1,8 +1,8 @@
 package com.aadi.sandesh.service;
 
 
-import com.aadi.sandesh.api.dto.ReceiptRequest;
-import com.aadi.sandesh.api.dto.ReceiptResponse;
+import com.aadi.sandesh.dto.message.ReceiptRequest;
+import com.aadi.sandesh.dto.message.ReceiptResponse;
 import com.aadi.sandesh.exception.ForbiddenException;
 import com.aadi.sandesh.exception.NotFoundException;
 import com.aadi.sandesh.repository.ConversationMemberRepository;

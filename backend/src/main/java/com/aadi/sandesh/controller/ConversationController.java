@@ -1,9 +1,9 @@
-package com.aadi.sandesh.api;
+package com.aadi.sandesh.controller;
 
-import com.aadi.sandesh.api.dto.AddMemberRequest;
-import com.aadi.sandesh.api.dto.ConversationResponse;
-import com.aadi.sandesh.api.dto.CreateConversationRequest;
-import com.aadi.sandesh.api.dto.UpdateConversationRequest;
+import com.aadi.sandesh.dto.conversation.AddMemberRequest;
+import com.aadi.sandesh.dto.conversation.ConversationResponse;
+import com.aadi.sandesh.dto.conversation.CreateConversationRequest;
+import com.aadi.sandesh.dto.conversation.UpdateConversationRequest;
 import com.aadi.sandesh.security.CurrentUser;
 import com.aadi.sandesh.service.ConversationService;
 import org.springframework.web.bind.annotation.RestController;

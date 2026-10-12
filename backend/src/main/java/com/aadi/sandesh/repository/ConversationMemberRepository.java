@@ -1,7 +1,7 @@
 package com.aadi.sandesh.repository;
 
-import com.aadi.sandesh.api.dto.ConversationMemberResponse;
-import com.aadi.sandesh.api.dto.MemberResponse;
+import com.aadi.sandesh.dto.conversation.ConversationMemberResponse;
+import com.aadi.sandesh.dto.conversation.MemberResponse;
 import com.aadi.sandesh.domain.ConversationMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,7 +19,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     );
 
     @Query("""
-                SELECT new com.aadi.sandesh.api.dto.MemberResponse(
+                SELECT new com.aadi.sandesh.dto.conversation.MemberResponse(
                     cm.userId, u.displayName, cm.role, cm.lastReadSequence
                     )
                     FROM ConversationMember cm
@@ -32,7 +32,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
     );
 
     @Query("""
-    SELECT new com.aadi.sandesh.api.dto.ConversationMemberResponse(
+    SELECT new com.aadi.sandesh.dto.conversation.ConversationMemberResponse(
         cm.conversationId,
         cm.userId,
         u.displayName,

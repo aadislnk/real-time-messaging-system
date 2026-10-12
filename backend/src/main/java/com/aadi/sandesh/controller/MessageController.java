@@ -1,6 +1,6 @@
-package com.aadi.sandesh.api;
+package com.aadi.sandesh.controller;
 
-import com.aadi.sandesh.api.dto.*;
+import com.aadi.sandesh.dto.message.*;
 import com.aadi.sandesh.security.CurrentUser;
 import com.aadi.sandesh.service.MessageService;
 import com.aadi.sandesh.service.ReceiptService;

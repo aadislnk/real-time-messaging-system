@@ -1,11 +1,7 @@
-package com.aadi.sandesh.api;
+package com.aadi.sandesh.exception;
 
-import com.aadi.sandesh.api.dto.ApiError;
-import com.aadi.sandesh.api.dto.FieldViolation;
-import com.aadi.sandesh.exception.ConflictException;
-import com.aadi.sandesh.exception.ForbiddenException;
-import com.aadi.sandesh.exception.NotFoundException;
-import com.aadi.sandesh.exception.RateLimitExceededException;
+import com.aadi.sandesh.dto.common.ApiError;
+import com.aadi.sandesh.dto.common.FieldViolation;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;

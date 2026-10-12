@@ -1,6 +1,6 @@
 package com.aadi.sandesh.service;
 
-import com.aadi.sandesh.api.dto.*;
+import com.aadi.sandesh.dto.conversation.*;
 import com.aadi.sandesh.domain.*;
 import com.aadi.sandesh.domain.enums.ConversationType;
 import com.aadi.sandesh.domain.enums.MemberRole;
