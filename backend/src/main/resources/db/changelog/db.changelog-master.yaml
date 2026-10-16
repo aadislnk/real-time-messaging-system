@@ -68,3 +68,13 @@ databaseChangeLog:
             relativeToChangelogFile: false
             splitStatements: true
             stripComments: true
+
+  - changeSet:
+      id: 008-create-user-blocks-schema
+      author: sandesh
+      changes:
+        - sqlFile:
+            path: db/changelog/008-create-user-blocks-schema.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true
