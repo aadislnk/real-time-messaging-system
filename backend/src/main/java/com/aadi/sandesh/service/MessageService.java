@@ -9,14 +9,12 @@ import com.aadi.sandesh.domain.enums.ReceiptState;
 import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.ForbiddenException;
 import com.aadi.sandesh.exception.NotFoundException;
-import com.aadi.sandesh.repository.ConversationMemberRepository;
-import com.aadi.sandesh.repository.ConversationRepository;
-import com.aadi.sandesh.repository.MessageReceiptRepository;
-import com.aadi.sandesh.repository.MessageRepository;
+import com.aadi.sandesh.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.UUID;
 
 @Service
@@ -29,6 +27,7 @@ public class MessageService {
     private final ConversationMemberRepository cmRepository;
     private final MessageReceiptRepository mrRepository;
     private final MessageReceiptStateService receiptStateService;
+    private final UserBlockRepository userBlockRepository;
 
     @Transactional
     public MessageResponse send(
@@ -67,6 +66,30 @@ public class MessageService {
             return toResponse(message, existingState);
         }
 
+        var recipientIds = cmRepository.findRecipientIds(conversationId, senderId);
+
+        if (recipientIds.isEmpty()) {
+            throw new NotFoundException("No recipients found for the sender");
+        }
+
+        var senderBlockedRecipientIds =
+                userBlockRepository.findBlockedRecipientIds(
+                        senderId, recipientIds
+                );
+
+        var recipientsWhoBlockedSender =
+                userBlockRepository.findRecipientsWhoBlockedSender(
+                        senderId,
+                        recipientIds
+                );
+
+        var blockedRecipientIds = new HashSet<>(senderBlockedRecipientIds);
+        blockedRecipientIds.addAll(recipientsWhoBlockedSender);
+
+        var deliverableRecipientIds = recipientIds.stream()
+                .filter(recipientId -> !blockedRecipientIds.contains(recipientId))
+                .toList();
+
         var conversation = conversationRepository.findByIdForUpdate(conversationId)
                 .orElseThrow(() ->
                         new NotFoundException("Conversation not found"));
@@ -84,11 +107,9 @@ public class MessageService {
 
         messageRepository.save(message);
 
-        var recipientIds = cmRepository.findRecipientIds(conversationId, senderId);
-
-        if (!recipientIds.isEmpty()) {
+        if (!deliverableRecipientIds.isEmpty()) {
             mrRepository.saveAll(
-                    recipientIds.stream()
+                    deliverableRecipientIds.stream()
                             .map(recipientId ->
                                     new MessageReceipt(
                                             message.getId(),
