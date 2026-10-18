@@ -8,7 +8,6 @@ import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.NotFoundException;
 import com.aadi.sandesh.repository.ConversationMemberRepository;
 import com.aadi.sandesh.repository.ConversationRepository;
-import com.aadi.sandesh.repository.MessageRepository;
 import com.aadi.sandesh.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +28,7 @@ public class ConversationService {
     private final ConversationMemberRepository convMemberRepository;
 
     private final MembershipService membershipService;
+    private final MessageService messageService;
 
     @Transactional
     public ConversationResponse create(UUID creatorId, CreateConversationRequest request) {
@@ -80,6 +80,23 @@ public class ConversationService {
                 )).toList();
 
         convMemberRepository.saveAll(members);
+
+        if(request.type() == ConversationType.GROUP){
+            var creatorName = users.stream()
+                    .filter(user -> user.getId().equals(creatorId))
+                    .findFirst()
+                    .orElseThrow(()->new NotFoundException("Creator not found"))
+                    .getDisplayName();
+
+            var recipientIds = members.stream().map(ConversationMember::getUserId).toList();
+
+            messageService.sendSystemMessage(
+                    creatorId,
+                    conversation.getId(),
+                    creatorName + " started the conversation",
+                    recipientIds
+            );
+        }
 
         return toResponse(conversation);
     }
@@ -217,7 +234,23 @@ public class ConversationService {
             );
         }
 
+        var actor = userAccountRepository.findById(actorId)
+                .orElseThrow(() -> new NotFoundException("Actor not found"));
+
+        var removedUser = userAccountRepository.findById(memberUserId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         convMemberRepository.delete(targetMember);
+
+        var recipientIds = convMemberRepository.findAllByConversationId(conversationId).stream()
+                .map(ConversationMember::getUserId).toList();
+
+        messageService.sendSystemMessage(
+                actorId,
+                conversationId,
+                actor.getDisplayName() + " removed " + removedUser.getDisplayName(),
+                recipientIds
+        );
 
         return toResponse(conversation);
     }
@@ -240,6 +273,21 @@ public class ConversationService {
         }
 
         conversation.rename(request.title());
+
+        var actor =  userAccountRepository.findById(actorId)
+                .orElseThrow(() -> new NotFoundException("Actor not found"));
+
+        var recipientIds = convMemberRepository.findAllByConversationId(conversationId).stream()
+                .map(ConversationMember::getUserId).toList();
+
+        messageService.sendSystemMessage(
+                actorId,
+                conversationId,
+                actor.getDisplayName()
+                        + " changed the group name to "
+                        + conversation.getTitle(),
+                recipientIds
+        );
 
         return toResponse(conversation);
     }
