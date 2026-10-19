@@ -56,6 +56,9 @@ sandesh:
     jwt-secret: ${SANDESH_JWT_SECRET}
     access-token-ttl: ${SANDESH_ACCESS_TOKEN_TTL:7d}
 
+  messaging:
+    realtime-channel: ${SANDESH_REALTIME_CHANNEL:sandesh:realtime}
+
   websocket:
     allowed-origins: ${SANDESH_WS_ALLOWED_ORIGINS:http://localhost:4173,http://localhost:4200}
 
