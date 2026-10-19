@@ -30,6 +30,9 @@ public class MessageDeliveryWorker {
 
     private final RedisRealtimePublisher redisRealtimePublisher;
 
+    private final PresenceService presenceService;
+    private final NotificationService notificationService;
+
     private final String streamKey;
     private final String consumerGroup;
     private final String consumerName;
@@ -39,7 +42,7 @@ public class MessageDeliveryWorker {
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
             ProcessedEventRepository processedEventRepository,
-            RedisRealtimePublisher redisRealtimePublisher,
+            RedisRealtimePublisher redisRealtimePublisher, PresenceService presenceService, NotificationService notificationService,
             @Value("${sandesh.messaging.stream-key}")
             String streamKey,
             @Value("${sandesh.messaging.consumer-group}")
@@ -50,6 +53,8 @@ public class MessageDeliveryWorker {
         this.objectMapper = objectMapper;
         this.processedEventRepository = processedEventRepository;
         this.redisRealtimePublisher = redisRealtimePublisher;
+        this.presenceService = presenceService;
+        this.notificationService = notificationService;
         this.streamKey = streamKey;
         this.consumerGroup = consumerGroup;
         this.consumerName = consumerName;
@@ -122,7 +127,7 @@ public class MessageDeliveryWorker {
                 ).forEach(this::process);
             }
         } catch (RuntimeException ignored) {
-         //   ignored.printStackTrace();
+            ignored.printStackTrace();
         }
     }
 
@@ -158,17 +163,22 @@ public class MessageDeliveryWorker {
             );
 
             for (var recipientId : event.recipientIds()) {
-                var realtimeEvent = new RealtimeEvent(
-                        "MESSAGE_CREATED",
-                        recipientId,
-                        event.message().conversationId(),
-                        event.message().senderId(),
-                        event.message().id(),
-                        event.message(),
-                        Instant.now()
-                );
+                if (presenceService.isOnline(recipientId)) {
+                    var realtimeEvent = new RealtimeEvent(
+                            "MESSAGE_CREATED",
+                            recipientId,
+                            event.message().conversationId(),
+                            event.message().senderId(),
+                            event.message().id(),
+                            event.message(),
+                            Instant.now()
+                    );
 
-                redisRealtimePublisher.publish(realtimeEvent);
+                    redisRealtimePublisher.publish(realtimeEvent);
+                } else {
+                    notificationService.notifyOfflineUser(recipientId, event.message());
+                }
+
             }
 
             processedEventRepository.save(
@@ -202,7 +212,6 @@ public class MessageDeliveryWorker {
             );
         } catch (RuntimeException ignored) {
             // ignored
-            ignored.printStackTrace();
         }
     }
 
