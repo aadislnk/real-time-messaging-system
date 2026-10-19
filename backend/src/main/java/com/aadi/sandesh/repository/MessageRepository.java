@@ -17,7 +17,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     Optional<Message> findByIdAndConversationId(UUID id, UUID conversationId);
 
-
+    Optional<Message> findTopByConversationIdOrderBySequenceNumberDesc(UUID conversationId);
     /*
     select 1 from userBlock ub where
         (
@@ -90,4 +90,14 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             @Param("hiddenAfterSequence") long hiddenAfterSequence,
             Pageable pageable
     );
+
+    @Query("""
+                select m
+                    from Message m
+                        join ConversationMember cm on cm.conversationId=m.conversationId
+                            where cm.userId = :userId
+                                and lower(m.content) like lower(concat('%',:query,'%'))
+                                            order by m.createdAt desc
+            """)
+    Slice<Message> searchVisibleMessages(UUID userId, String query, Pageable pageable);
 }
