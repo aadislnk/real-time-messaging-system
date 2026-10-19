@@ -88,3 +88,13 @@ databaseChangeLog:
             relativeToChangelogFile: false
             splitStatements: true
             stripComments: true
+
+  - changeSet:
+      id: 010-create-device-registration-schema
+      author: sandesh
+      changes:
+        - sqlFile:
+            path: db/changelog/010-create-device-registration-schema.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true
