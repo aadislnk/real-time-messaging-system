@@ -122,7 +122,7 @@ public class MessageDeliveryWorker {
                 ).forEach(this::process);
             }
         } catch (RuntimeException ignored) {
-            ignored.printStackTrace();
+         //   ignored.printStackTrace();
         }
     }
 
