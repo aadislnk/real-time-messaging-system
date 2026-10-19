@@ -58,6 +58,11 @@ sandesh:
 
   messaging:
     realtime-channel: ${SANDESH_REALTIME_CHANNEL:sandesh:realtime}
+    stream-key: sandesh:message-events
+    consumer-group: sandesh-delivery
+    consumer-name: ${HOSTNAME:local-worker}
+    outbox-poll-delay-ms: 100
+    delivery-poll-delay-ms: 100
 
   websocket:
     allowed-origins: ${SANDESH_WS_ALLOWED_ORIGINS:http://localhost:4173,http://localhost:4200}

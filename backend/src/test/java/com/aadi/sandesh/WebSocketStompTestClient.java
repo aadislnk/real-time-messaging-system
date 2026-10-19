@@ -16,7 +16,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class WebSocketStompTestClient {
     public static void main(String[] args) throws InterruptedException {
-        String token = "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI1M2Y2NDY0ZC1hMmVmLTQ1YzQtOTU1My04MjBiNDQxNjBlZWIiLCJlbWFpbCI6InVzZXIxQHVzZXIxLmNvbSIsImlhdCI6MTc5MDc3MTA3MiwiZXhwIjoxNzkxMzc1ODcyfQ.lj4bbsNK4lkFrwqr3wAdL7pR0EotLX9ZRgD90LylY8V8hzagwZhSs0VyGv-29t9W";
+        String token = "YOUR_JWT";
 
         var webSocketClient = new StandardWebSocketClient();
 

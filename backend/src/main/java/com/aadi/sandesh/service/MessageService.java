@@ -1,5 +1,7 @@
 package com.aadi.sandesh.service;
 
+import com.aadi.sandesh.domain.OutboxEvent;
+import com.aadi.sandesh.dto.event.MessageCreatedEvent;
 import com.aadi.sandesh.dto.message.MessageResponse;
 import com.aadi.sandesh.dto.message.SendMessageRequest;
 import com.aadi.sandesh.domain.Message;
@@ -13,10 +15,13 @@ import com.aadi.sandesh.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +34,13 @@ public class MessageService {
     private final MessageReceiptRepository mrRepository;
     private final MessageReceiptStateService receiptStateService;
     private final UserBlockRepository userBlockRepository;
+
+    private final OutboxRepository outboxRepository;
+    private final AuditService auditService;
+
     private final RateLimitService rateLimitService;
+
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public MessageResponse send(
@@ -123,7 +134,34 @@ public class MessageService {
             );
         }
 
-        return toResponse(message, ReceiptState.SENT);
+        var response = toResponse(message, ReceiptState.SENT);
+
+        outboxRepository.save(
+                new OutboxEvent(
+                        "MESSAGE",
+                        message.getId(),
+                        "MESSAGE_CREATED",
+                        toJson(
+                                new MessageCreatedEvent(
+                                        response,
+                                        deliverableRecipientIds
+                                )
+                        )
+                )
+        );
+
+        auditService.record(
+                senderId,
+                "MESSAGE_SENT",
+                "MESSAGE",
+                message.getId().toString(),
+                Map.of(
+                        "conversationId", conversationId,
+                        "sequence", sequenceNumber
+                )
+        );
+
+        return response;
     }
 
     @Transactional
@@ -132,7 +170,7 @@ public class MessageService {
             UUID conversationId,
             String content,
             List<UUID> recipientIds
-    ){
+    ) {
         var conversation = conversationRepository.findByIdForUpdate(conversationId)
                 .orElseThrow(() ->
                         new NotFoundException("Conversation not found"));
@@ -164,5 +202,13 @@ public class MessageService {
                 message.getCreatedAt(),
                 state
         );
+    }
+
+    private String toJson(MessageCreatedEvent event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Could not serialize message event", exception);
+        }
     }
 }
