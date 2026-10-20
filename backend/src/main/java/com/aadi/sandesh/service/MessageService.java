@@ -1,13 +1,12 @@
 package com.aadi.sandesh.service;
 
 import com.aadi.sandesh.domain.OutboxEvent;
+import com.aadi.sandesh.domain.enums.*;
 import com.aadi.sandesh.dto.event.MessageCreatedEvent;
 import com.aadi.sandesh.dto.message.MessageResponse;
 import com.aadi.sandesh.dto.message.SendMessageRequest;
 import com.aadi.sandesh.domain.Message;
 import com.aadi.sandesh.domain.MessageReceipt;
-import com.aadi.sandesh.domain.enums.MessageType;
-import com.aadi.sandesh.domain.enums.ReceiptState;
 import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.ForbiddenException;
 import com.aadi.sandesh.exception.NotFoundException;
@@ -98,6 +97,18 @@ public class MessageService {
                         recipientIds
                 );
 
+        var conversation = conversationRepository.findByIdForUpdate(conversationId)
+                .orElseThrow(() ->
+                        new NotFoundException("Conversation not found"));
+
+        if (conversation.getType() == ConversationType.DIRECT
+                && (
+                !recipientsWhoBlockedSender.isEmpty()
+                        || !senderBlockedRecipientIds.isEmpty()
+        )) {
+            throw new ConflictException("You cannot send messages to this user");
+        }
+
         var blockedRecipientIds = new HashSet<>(senderBlockedRecipientIds);
         blockedRecipientIds.addAll(recipientsWhoBlockedSender);
 
@@ -105,9 +116,6 @@ public class MessageService {
                 .filter(recipientId -> !blockedRecipientIds.contains(recipientId))
                 .toList();
 
-        var conversation = conversationRepository.findByIdForUpdate(conversationId)
-                .orElseThrow(() ->
-                        new NotFoundException("Conversation not found"));
 
         long sequenceNumber = conversation.allocateNextMessageSequence();
 
@@ -138,9 +146,9 @@ public class MessageService {
 
         outboxRepository.save(
                 new OutboxEvent(
-                        "MESSAGE",
+                        ResourceType.MESSAGE.name(),
                         message.getId(),
-                        "MESSAGE_CREATED",
+                        EventType.MESSAGE_CREATED.name(),
                         toJson(
                                 new MessageCreatedEvent(
                                         response,
@@ -152,8 +160,8 @@ public class MessageService {
 
         auditService.record(
                 senderId,
-                "MESSAGE_SENT",
-                "MESSAGE",
+                EventType.MESSAGE_SENT.name(),
+                ResourceType.MESSAGE.name(),
                 message.getId().toString(),
                 Map.of(
                         "conversationId", conversationId,
@@ -187,7 +195,35 @@ public class MessageService {
         );
         messageRepository.save(message);
 
-        return toResponse(message, null);
+        var response = toResponse(message, null);
+
+        outboxRepository.save(
+                new OutboxEvent(
+                        ResourceType.MESSAGE.name(),
+                        message.getId(),
+                        EventType.MESSAGE_CREATED.name(),
+                        toJson(
+                                new MessageCreatedEvent(
+                                        response,
+                                        recipientIds
+                                )
+                        )
+                )
+        );
+
+        auditService.record(
+                actorId,
+                EventType.MESSAGE_SENT.name(),
+                ResourceType.MESSAGE.name(),
+                message.getId().toString(),
+                Map.of(
+                        "conversationId", conversationId,
+                        "sequence", sequenceNumber,
+                        "system", true
+                )
+        );
+
+        return response;
     }
 
     public static MessageResponse toResponse(Message message, ReceiptState state) {
