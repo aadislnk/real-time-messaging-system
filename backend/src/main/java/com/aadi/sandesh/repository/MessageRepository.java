@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -100,4 +102,58 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
                                             order by m.createdAt desc
             """)
     Slice<Message> searchVisibleMessages(UUID userId, String query, Pageable pageable);
+
+
+    @Query("""
+            select m.conversationId, max(m.sequenceNumber) from Message m
+                    where m.conversationId in :conversationIds
+                            group by m.conversationId
+            """)
+    List<Object[]> findLatestSequences(
+            @Param("conversationIds") Collection<UUID> conversationIds
+    );
+    @Query("""
+            select m.conversationId, m.content
+                    from Message m
+                            join ConversationMember cm
+                                    on cm.conversationId = m.conversationId
+                                            and cm.userId = :userId
+                   where m.conversationId in :conversationIds
+                      and m.sequenceNumber > coalesce(cm.hiddenAfterSequence, 0)
+            
+                      and (
+                             m.senderId = :userId
+            
+                             or not exists(
+                                    select 1 from UserBlock ub
+                                  where
+                                   (ub.blockerId = :userId and ub.blockedId = m.senderId)
+                                               or
+                                   (ub.blockerId = m.senderId and ub.blockedId = :userId)
+                              )
+                     )
+                     and m.sequenceNumber = (
+                        select max(m2.sequenceNumber)
+                                    from Message m2
+                                      where m2.conversationId = m.conversationId
+                                         and m2.sequenceNumber > coalesce(cm.hiddenAfterSequence, 0)
+            
+                                     and (
+                             m2.senderId = :userId
+            
+                             or not exists(
+                                    select 1 from UserBlock ub2
+                                  where
+                                   (ub2.blockerId = :userId and ub2.blockedId = m2.senderId)
+                                               or
+                                   (ub2.blockerId = m2.senderId and ub2.blockedId = :userId)
+                              )
+                     )
+                        )
+            
+            """)
+    List<Object[]> findLatestMessagePreviews(
+            @Param("userId") UUID userId,
+            @Param("conversationIds") Collection<UUID> conversationIds
+    );
 }

@@ -2,6 +2,7 @@ package com.aadi.sandesh.service;
 
 import com.aadi.sandesh.domain.ConversationMember;
 import com.aadi.sandesh.domain.UserAccount;
+import com.aadi.sandesh.domain.enums.EventType;
 import com.aadi.sandesh.dto.event.RealtimeEvent;
 import com.aadi.sandesh.messaging.RedisRealtimePublisher;
 import com.aadi.sandesh.repository.ConversationMemberRepository;
@@ -39,8 +40,8 @@ public class TypingService {
                 .filter(userId -> !userId.equals(actorId))
                 .forEach(targetUserId -> {
                     var evenType = typing
-                            ? "TYPING_STARTED"
-                            : "TYPING_STOPPED";
+                            ? EventType.TYPING_STARTED
+                            : EventType.TYPING_STOPPED;
 
                     publisher.publish(
                             new RealtimeEvent(

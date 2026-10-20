@@ -1,6 +1,7 @@
 package com.aadi.sandesh.controller;
 
 
+import com.aadi.sandesh.domain.enums.EventType;
 import com.aadi.sandesh.dto.event.RealtimeEvent;
 import com.aadi.sandesh.messaging.RedisRealtimePublisher;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class RealtimeTestController {
     @PostMapping("/{userId}")
     public void test(@PathVariable UUID userId) {
         var event = new RealtimeEvent(
-                "TEST",
+                EventType.TEST,
                 userId,
                 null,
                 null,
