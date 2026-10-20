@@ -1,10 +1,12 @@
 package com.aadi.sandesh.dto.event;
 
+import com.aadi.sandesh.domain.enums.EventType;
+
 import java.time.Instant;
 import java.util.UUID;
 
 public record RealtimeEvent(
-        String type,
+        EventType type,
         UUID targetUserId,
         UUID conversationId,
         UUID actorUserId,

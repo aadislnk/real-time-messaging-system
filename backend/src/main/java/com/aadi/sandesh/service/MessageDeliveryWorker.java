@@ -1,6 +1,7 @@
 package com.aadi.sandesh.service;
 
 import com.aadi.sandesh.domain.ProcessedEvent;
+import com.aadi.sandesh.domain.enums.EventType;
 import com.aadi.sandesh.dto.event.MessageCreatedEvent;
 import com.aadi.sandesh.dto.event.RealtimeEvent;
 import com.aadi.sandesh.messaging.RedisRealtimePublisher;
@@ -155,14 +156,15 @@ public class MessageDeliveryWorker {
 
         try {
             var eventId = UUID.fromString(eventIdRaw);
+            var type = EventType.valueOf(eventType);
 
             if (processedEventRepository.existsById(eventId)) {
                 acknowledge(record);
                 return;
             }
 
-            switch (eventType) {
-                case "MESSAGE_CREATED" -> {
+            switch (type) {
+                case MESSAGE_CREATED -> {
                     var event = objectMapper.readValue(
                             payloadJson,
                             MessageCreatedEvent.class
@@ -171,7 +173,7 @@ public class MessageDeliveryWorker {
                     for (var recipientId : event.recipientIds()) {
                         if (presenceService.isOnline(recipientId)) {
                             var realtimeEvent = new RealtimeEvent(
-                                    "MESSAGE_CREATED",
+                                    EventType.MESSAGE_CREATED,
                                     recipientId,
                                     event.message().conversationId(),
                                     event.message().senderId(),
@@ -188,7 +190,9 @@ public class MessageDeliveryWorker {
                     }
                 }
 
-                case "CONVERSATION_REMOVED" -> {
+                case CONVERSATION_CREATED,
+                     CONVERSATION_UPDATED,
+                     CONVERSATION_REMOVED -> {
                     var event = objectMapper.readValue(
                             payloadJson,
                             RealtimeEvent.class
