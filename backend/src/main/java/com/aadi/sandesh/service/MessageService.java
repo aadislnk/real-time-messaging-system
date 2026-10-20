@@ -1,5 +1,6 @@
 package com.aadi.sandesh.service;
 
+import com.aadi.sandesh.domain.ConversationMember;
 import com.aadi.sandesh.domain.OutboxEvent;
 import com.aadi.sandesh.domain.enums.*;
 import com.aadi.sandesh.dto.event.MessageCreatedEvent;
@@ -66,12 +67,18 @@ public class MessageService {
                         "clientMessageId was already used for different content"
                 );
             }
+            var currentMemberIds = cmRepository
+                    .findAllByConversationId(conversationId)
+                    .stream()
+                    .map(ConversationMember::getUserId)
+                    .toList();
 
             ReceiptState existingState =
                     receiptStateService.resolveForSender(
                             message,
                             senderId,
-                            mrRepository.findAllByMessageId(message.getId())
+                            mrRepository.findAllByMessageId(message.getId()),
+                            currentMemberIds
                     ).orElseThrow(
                             () -> new ForbiddenException("You are not allowed to view the state of message"));
 
@@ -194,6 +201,15 @@ public class MessageService {
                 content
         );
         messageRepository.save(message);
+
+        mrRepository.saveAll(
+                recipientIds.stream()
+                        .filter(recipientId -> !recipientId.equals(actorId))
+                        .map(recipientId -> new MessageReceipt(
+                                message.getId(),
+                                recipientId
+                        )).toList()
+        );
 
         var response = toResponse(message, null);
 

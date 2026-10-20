@@ -51,10 +51,13 @@ public class Message {
         this.sequenceNumber = sequenceNumber;
         this.messageType = messageType;
         this.content = content.strip();
+        this.createdAt = Instant.now();
     }
 
     @PrePersist
     void onCreate() {
-        this.createdAt = Instant.now();
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
     }
 }
