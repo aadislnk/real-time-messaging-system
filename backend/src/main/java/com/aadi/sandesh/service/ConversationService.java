@@ -1,11 +1,11 @@
 package com.aadi.sandesh.service;
 
-import com.aadi.sandesh.domain.enums.EventType;
-import com.aadi.sandesh.domain.enums.ResourceType;
-import com.aadi.sandesh.dto.conversation.*;
 import com.aadi.sandesh.domain.*;
 import com.aadi.sandesh.domain.enums.ConversationType;
+import com.aadi.sandesh.domain.enums.EventType;
 import com.aadi.sandesh.domain.enums.MemberRole;
+import com.aadi.sandesh.domain.enums.ResourceType;
+import com.aadi.sandesh.dto.conversation.*;
 import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.NotFoundException;
 import com.aadi.sandesh.repository.*;
@@ -13,10 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +24,7 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository convMemberRepository;
     private final MessageRepository messageRepository;
+    private final UserBlockRepository userBlockRepository;
 
     private final MembershipService membershipService;
     private final MessageService messageService;
@@ -37,7 +36,6 @@ public class ConversationService {
     @Transactional
     public ConversationResponse create(UUID creatorId, CreateConversationRequest request) {
         var memberIds = new LinkedHashSet<>(request.memberIds());
-
         memberIds.add(creatorId);
 
         if (request.type() == ConversationType.DIRECT && memberIds.size() != 2) {
@@ -53,8 +51,19 @@ public class ConversationService {
         }
 
         if (request.type() == ConversationType.DIRECT) {
-            var existingConversationOptional = findDuplicateDirectConversation(memberIds);
+            var otherUserId = memberIds.stream()
+                    .filter(id -> !id.equals(creatorId))
+                    .findFirst()
+                    .orElse(null);
 
+            if (otherUserId != null && (
+                    userBlockRepository.existsByBlockerIdAndBlockedId(creatorId, otherUserId)
+                            || userBlockRepository.existsByBlockerIdAndBlockedId(otherUserId, creatorId)
+            )) {
+                throw new ConflictException("Cannot create conversation with a blocked user");
+            }
+
+            var existingConversationOptional = findDuplicateDirectConversation(memberIds);
             if (existingConversationOptional.isPresent()) {
                 return toResponse(existingConversationOptional.get());
             }
@@ -93,7 +102,6 @@ public class ConversationService {
                     .findFirst()
                     .orElseThrow(() -> new NotFoundException("Creator not found"))
                     .getDisplayName();
-
 
             messageService.sendSystemMessage(
                     creatorId,
@@ -199,7 +207,6 @@ public class ConversationService {
                         return false;
                     }
 
-
                     long latestSequence = latestSequences.getOrDefault(
                             conversation.getId(),
                             0L
@@ -243,7 +250,6 @@ public class ConversationService {
                             latestMessagePreviews.get(conversation.getId())
                     );
                 }).toList();
-
     }
 
     @Transactional

@@ -23,7 +23,7 @@ public class UserAccount {
     @Column(nullable = false, unique = true, length = 254)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, unique = true, length = 100)
+    @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
 
     @Column(nullable = false)
@@ -31,7 +31,8 @@ public class UserAccount {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
-    @Column(name = "updated_at", nullable = false, updatable = false)
+
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     public UserAccount(String displayName, String email, String passwordHash) {

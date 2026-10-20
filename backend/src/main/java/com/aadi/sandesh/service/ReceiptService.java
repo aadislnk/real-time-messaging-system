@@ -1,6 +1,5 @@
 package com.aadi.sandesh.service;
 
-
 import com.aadi.sandesh.domain.ConversationMember;
 import com.aadi.sandesh.domain.OutboxEvent;
 import com.aadi.sandesh.domain.enums.EventType;
@@ -45,8 +44,8 @@ public class ReceiptService {
     ) {
         membershipService.requireMember(conversationId, userId);
 
-        var message = messageRepository.
-                findByIdAndConversationId(messageId, conversationId)
+        var message = messageRepository
+                .findByIdAndConversationId(messageId, conversationId)
                 .orElseThrow(() -> new NotFoundException("Message not found"));
 
         var receipts = receiptRepository.findAllByMessageIdForUpdate(messageId);
@@ -56,37 +55,46 @@ public class ReceiptService {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Receipt not found for this user"));
 
-        var now = Instant.now();
-
-        switch (request.type()) {
-            case DELIVERED -> receipt.markDelivered(now);
-
-            case READ -> {
-                receipt.markRead(now);
-
-                var member = memberRepository
-                        .findByConversationIdAndUserId(conversationId, userId)
-                        .orElseThrow(() -> new NotFoundException("Conversation Member not found"));
-
-                member.markReadThrough(message.getSequenceNumber());
-
-                memberRepository.save(member);
-            }
-        }
-
         var currentMemberIds = memberRepository
                 .findAllByConversationId(conversationId)
                 .stream()
                 .map(ConversationMember::getUserId)
                 .toList();
 
+        boolean stateChanged = false;
+        var now = Instant.now();
+
+        switch (request.type()) {
+            case DELIVERED -> {
+                // Monotonic: if already delivered or read, transition is a no-op
+                if (receipt.getDeliveredAt() == null && receipt.getReadAt() == null) {
+                    receipt.markDelivered(now);
+                    stateChanged = true;
+                }
+            }
+
+            case READ -> {
+                // Monotonic: if already read, transition is a no-op
+                if (receipt.getReadAt() == null) {
+                    receipt.markRead(now);
+                    stateChanged = true;
+
+                    var member = memberRepository
+                            .findByConversationIdAndUserId(conversationId, userId)
+                            .orElseThrow(() -> new NotFoundException("Conversation member not found"));
+
+                    member.markReadThrough(message.getSequenceNumber());
+                    memberRepository.save(member);
+                }
+            }
+        }
+
         var receiptState = mrStateService.resolveForSender(
                 message,
                 message.getSenderId(),
-                receiptRepository.findAllByMessageId(messageId),
+                receipts,
                 currentMemberIds
-        ).orElseThrow(
-                () -> new ForbiddenException("You are not allowed to view the state of message"));
+        ).orElseThrow(() -> new ForbiddenException("You are not allowed to view the state of message"));
 
         var response = new ReceiptResponse(
                 receipt.getMessageId(),
@@ -96,28 +104,31 @@ public class ReceiptService {
                 receiptState
         );
 
-        var eventType = request.type() == ReceiptType.DELIVERED
-                ? EventType.MESSAGE_DELIVERED
-                : EventType.MESSAGE_READ;
+        // Only emit realtime event and write outbox if state actually changed (idempotency)
+        if (stateChanged) {
+            var eventType = request.type() == ReceiptType.DELIVERED
+                    ? EventType.MESSAGE_DELIVERED
+                    : EventType.MESSAGE_READ;
 
-        outboxRepository.save(
-                new OutboxEvent(
-                        ResourceType.MESSAGE.name(),
-                        message.getId(),
-                        eventType.name(),
-                        toJson(
-                                new RealtimeEvent(
-                                        eventType,
-                                        message.getSenderId(),
-                                        conversationId,
-                                        userId,
-                                        message.getId(),
-                                        response,
-                                        Instant.now()
-                                )
-                        )
-                )
-        );
+            outboxRepository.save(
+                    new OutboxEvent(
+                            ResourceType.MESSAGE.name(),
+                            message.getId(),
+                            eventType.name(),
+                            toJson(
+                                    new RealtimeEvent(
+                                            eventType,
+                                            message.getSenderId(),
+                                            conversationId,
+                                            userId,
+                                            message.getId(),
+                                            response,
+                                            Instant.now()
+                                    )
+                            )
+                    )
+            );
+        }
 
         return response;
     }
@@ -155,12 +166,11 @@ public class ReceiptService {
                 continue;
             }
 
-            var eventType =
-                    switch (receiptState) {
-                        case DELIVERED -> EventType.MESSAGE_DELIVERED;
-                        case READ -> EventType.MESSAGE_READ;
-                        case SENT -> null;
-                    };
+            var eventType = switch (receiptState) {
+                case DELIVERED -> EventType.MESSAGE_DELIVERED;
+                case READ -> EventType.MESSAGE_READ;
+                case SENT -> null;
+            };
 
             if (eventType == null) {
                 continue;
@@ -195,15 +205,11 @@ public class ReceiptService {
         }
     }
 
-
     private String toJson(RealtimeEvent event) {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JacksonException exception) {
-            throw new IllegalStateException(
-                    "Could not serialize receipt event",
-                    exception
-            );
+            throw new IllegalStateException("Could not serialize receipt event", exception);
         }
     }
 }

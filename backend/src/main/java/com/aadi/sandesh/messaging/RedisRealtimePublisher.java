@@ -36,5 +36,7 @@ public class RedisRealtimePublisher {
         }
     }
 
-    // REDIS PUBLISH chathub:realtime "dsdsdsdsd...s........"
+    git add docker-compose.yaml pom.xml .env.example src/main/java/ src/main/resources/db/changelog/db.changelog-master.yaml
+
+    git commit -m "final fixes"
 }

@@ -98,3 +98,13 @@ databaseChangeLog:
             relativeToChangelogFile: false
             splitStatements: true
             stripComments: true
+
+  - changeSet:
+      id: 011-alter-outbox-and-conversations
+      author: sandesh
+      changes:
+        - sqlFile:
+            path: db/changelog/011-alter-outbox-and-conversations.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true

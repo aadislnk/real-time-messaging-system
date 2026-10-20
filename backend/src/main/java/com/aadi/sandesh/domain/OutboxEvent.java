@@ -1,6 +1,5 @@
 package com.aadi.sandesh.domain;
 
-
 import com.aadi.sandesh.domain.enums.OutboxStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -47,6 +46,9 @@ public class OutboxEvent {
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @Column(name = "last_error", columnDefinition = "TEXT")
+    private String lastError;
+
     public OutboxEvent(
             String aggregateType,
             UUID aggregateId,
@@ -67,26 +69,32 @@ public class OutboxEvent {
     public void markPublished() {
         this.status = OutboxStatus.PUBLISHED;
         this.publishedAt = Instant.now();
+        this.lastError = null;
     }
 
     public void scheduleRetry() {
+        scheduleRetry(null);
+    }
+
+    public void scheduleRetry(String error) {
         this.attempts++;
+        this.lastError = sanitizeError(error);
+        this.status = attempts >= 10 ? OutboxStatus.FAILED : OutboxStatus.PENDING;
 
-        status = attempts >= 10 ? OutboxStatus.FAILED : OutboxStatus.PENDING;
+        // Exponential backoff: 2s, 4s, 8s, 16s, ... capped at 300s
+        long delaySeconds = Math.min(300L, 1L << Math.min(attempts, 8));
+        this.availableAt = Instant.now().plusSeconds(delaySeconds);
+    }
 
-        /*
-        attempt 1 -> 2 seconds
-        attempt 2 -> 4 seconds
-        attempt 3 -> 8 seconds
-        ...
-        capped at 300 seconds
-         */
+    public void markFailed(String error) {
+        this.status = OutboxStatus.FAILED;
+        this.lastError = sanitizeError(error);
+    }
 
-        availableAt = Instant.now().plusSeconds(
-                Math.min(
-                        300,
-                        1L << Math.min(attempts, 8)
-                )
-        );
+    private String sanitizeError(String error) {
+        if (error == null || error.isBlank()) {
+            return null;
+        }
+        return error.length() > 1000 ? error.substring(0, 1000) : error;
     }
 }

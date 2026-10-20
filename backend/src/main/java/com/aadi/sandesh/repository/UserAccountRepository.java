@@ -17,7 +17,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, UUID> 
     Optional<UserAccount> findByEmailIgnoreCase(String email);
 
     @Query("""
-            select new com.shahbytes.chathub.api.dto.response.UserResponse(
+            select new com.aadi.sandesh.dto.user.UserResponse(
                     u.id,
                             u.displayName,
                                     u.email

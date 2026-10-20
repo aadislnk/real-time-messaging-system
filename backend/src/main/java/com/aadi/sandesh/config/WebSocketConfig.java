@@ -16,7 +16,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final WebSocketAuthInterceptor authInterceptor;
 
     public WebSocketConfig(
-            @Value("${sandesh.websocket.allow-origins}")
+            @Value("${sandesh.websocket.allowed-origins}")
             String allowedOrigins, WebSocketAuthInterceptor authInterceptor) {
         this.allowedOrigins = allowedOrigins.split(",");
         this.authInterceptor = authInterceptor;
