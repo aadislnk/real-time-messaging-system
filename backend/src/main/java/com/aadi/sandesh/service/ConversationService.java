@@ -4,7 +4,6 @@ import com.aadi.sandesh.domain.*;
 import com.aadi.sandesh.domain.enums.ConversationType;
 import com.aadi.sandesh.domain.enums.EventType;
 import com.aadi.sandesh.domain.enums.MemberRole;
-import com.aadi.sandesh.domain.enums.ResourceType;
 import com.aadi.sandesh.dto.conversation.*;
 import com.aadi.sandesh.exception.ConflictException;
 import com.aadi.sandesh.exception.NotFoundException;
@@ -24,11 +23,9 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository convMemberRepository;
     private final MessageRepository messageRepository;
-    private final UserBlockRepository userBlockRepository;
 
     private final MembershipService membershipService;
     private final MessageService messageService;
-    private final AuditService auditService;
 
     private final ConversationEventService conversationEventService;
     private final ReceiptService receiptService;
@@ -51,18 +48,6 @@ public class ConversationService {
         }
 
         if (request.type() == ConversationType.DIRECT) {
-            var otherUserId = memberIds.stream()
-                    .filter(id -> !id.equals(creatorId))
-                    .findFirst()
-                    .orElse(null);
-
-            if (otherUserId != null && (
-                    userBlockRepository.existsByBlockerIdAndBlockedId(creatorId, otherUserId)
-                            || userBlockRepository.existsByBlockerIdAndBlockedId(otherUserId, creatorId)
-            )) {
-                throw new ConflictException("Cannot create conversation with a blocked user");
-            }
-
             var existingConversationOptional = findDuplicateDirectConversation(memberIds);
             if (existingConversationOptional.isPresent()) {
                 return toResponse(existingConversationOptional.get());
@@ -110,17 +95,6 @@ public class ConversationService {
                     recipientIds
             );
         }
-
-        auditService.record(
-                creatorId,
-                EventType.CONVERSATION_CREATED.name(),
-                ResourceType.CONVERSATION.name(),
-                conversation.getId().toString(),
-                Map.of(
-                        "type", request.type().name(),
-                        "memberCount", members.size()
-                )
-        );
 
         var response = toResponse(conversation);
 
@@ -304,17 +278,6 @@ public class ConversationService {
                 recipientIds
         );
 
-        auditService.record(
-                actorId,
-                EventType.CONVERSATION_MEMBER_ADDED.name(),
-                ResourceType.CONVERSATION.name(),
-                conversationId.toString(),
-                Map.of(
-                        "userId", request.userId(),
-                        "role", request.role().name()
-                )
-        );
-
         var response = toResponse(conversation);
 
         conversationEventService.conversationChangedForMembers(
@@ -384,16 +347,6 @@ public class ConversationService {
                 recipientIds
         );
 
-        auditService.record(
-                actorId,
-                EventType.CONVERSATION_MEMBER_REMOVED.name(),
-                ResourceType.CONVERSATION.name(),
-                conversationId.toString(),
-                Map.of(
-                        "userId", memberUserId
-                )
-        );
-
         conversationEventService.memberRemoved(
                 memberUserId,
                 conversationId,
@@ -431,18 +384,6 @@ public class ConversationService {
         }
 
         conversation.rename(request.title());
-
-        auditService.record(
-                actorId,
-                EventType.CONVERSATION_UPDATED.name(),
-                ResourceType.CONVERSATION.name(),
-                conversationId.toString(),
-                Map.of(
-                        "title",
-                        request.title() == null ? ""
-                                : request.title()
-                )
-        );
 
         var actor = userAccountRepository.findById(actorId)
                 .orElseThrow(() -> new NotFoundException("Actor not found"));
@@ -507,16 +448,6 @@ public class ConversationService {
 
             conversationRepository.deleteById(conversationId);
 
-            auditService.record(
-                    actorId,
-                    EventType.CONVERSATION_DELETED.name(),
-                    ResourceType.CONVERSATION.name(),
-                    conversationId.toString(),
-                    Map.of(
-                            "scope", "GROUP_HARD_DELETE"
-                    )
-            );
-
             return;
         }
 
@@ -537,13 +468,6 @@ public class ConversationService {
                 false
         );
 
-        auditService.record(
-                actorId,
-                EventType.CONVERSATION_DELETED_FOR_USER.name(),
-                ResourceType.CONVERSATION.name(),
-                conversationId.toString(),
-                Map.of()
-        );
     }
 
     private Optional<Conversation> findDuplicateDirectConversation(

@@ -69,7 +69,6 @@ public class MessageQueryService {
             );
 
             var slice = messageRepository.findVisibleMessagesAfterSequence(
-                    userId,
                     conversationId,
                     effectiveAfterSequence,
                     pageable
@@ -93,7 +92,6 @@ public class MessageQueryService {
         }
 
         var slice = messageRepository.findLatestVisibleMessages(
-                userId,
                 conversationId,
                 hiddenAfterSequence,
                 pageable

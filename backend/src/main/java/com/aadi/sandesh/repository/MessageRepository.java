@@ -20,44 +20,14 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     Optional<Message> findByIdAndConversationId(UUID id, UUID conversationId);
 
     Optional<Message> findTopByConversationIdOrderBySequenceNumberDesc(UUID conversationId);
-    /*
-    select 1 from userBlock ub where
-        (
-            ub.blockerId = :userId
-            and ub.blockedId = m.senderId
-        )
-        or
-        (
-            ub.blockerId = m.senderId
-            and ub.blockedId = :userId
-        )
-     */
 
     @Query("""
             select m from Message m 
                 where m.conversationId = :conversationId
                     and m.sequenceNumber > :afterSequence
-                        and(
-                            m.senderId = :userId
-                            or not exists (
-                                select 1 
-                                      from UserBlock ub
-                                           where
-                                            (
-                                              ub.blockerId = :userId
-                                              and ub.blockedId = m.senderId           
-                                            )
-                                            or
-                                            (
-                                              ub.blockerId = m.senderId
-                                              and ub.blockedId = :userId           
-                                            )
-                                )
-                            )
                         order by m.sequenceNumber asc
             """)
     Slice<Message> findVisibleMessagesAfterSequence(
-            @Param("userId") UUID userId,
             @Param("conversationId") UUID conversationId,
             @Param("afterSequence") long afterSequence,
             Pageable pageable
@@ -67,27 +37,9 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             select m from Message m 
                 where m.conversationId = :conversationId
                     and m.sequenceNumber > :hiddenAfterSequence
-                        and(
-                            m.senderId = :userId
-                            or not exists (
-                                select 1 
-                                      from UserBlock ub
-                                           where
-                                            (
-                                              ub.blockerId = :userId
-                                              and ub.blockedId = m.senderId           
-                                            )
-                                            or
-                                            (
-                                              ub.blockerId = m.senderId
-                                              and ub.blockedId = :userId           
-                                            )
-                                )
-                            )
                         order by m.sequenceNumber desc
             """)
     Slice<Message> findLatestVisibleMessages(
-            @Param("userId") UUID userId,
             @Param("conversationId") UUID conversationId,
             @Param("hiddenAfterSequence") long hiddenAfterSequence,
             Pageable pageable
@@ -120,35 +72,11 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
                                             and cm.userId = :userId
                    where m.conversationId in :conversationIds
                       and m.sequenceNumber > coalesce(cm.hiddenAfterSequence, 0)
-            
-                      and (
-                             m.senderId = :userId
-            
-                             or not exists(
-                                    select 1 from UserBlock ub
-                                  where
-                                   (ub.blockerId = :userId and ub.blockedId = m.senderId)
-                                               or
-                                   (ub.blockerId = m.senderId and ub.blockedId = :userId)
-                              )
-                     )
                      and m.sequenceNumber = (
                         select max(m2.sequenceNumber)
                                     from Message m2
                                       where m2.conversationId = m.conversationId
                                          and m2.sequenceNumber > coalesce(cm.hiddenAfterSequence, 0)
-            
-                                     and (
-                             m2.senderId = :userId
-            
-                             or not exists(
-                                    select 1 from UserBlock ub2
-                                  where
-                                   (ub2.blockerId = :userId and ub2.blockedId = m2.senderId)
-                                               or
-                                   (ub2.blockerId = m2.senderId and ub2.blockedId = :userId)
-                              )
-                     )
                         )
             
             """)

@@ -15,12 +15,10 @@ import com.aadi.sandesh.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import java.util.Map;
 
 
 @Service
@@ -33,10 +31,8 @@ public class MessageService {
     private final ConversationMemberRepository cmRepository;
     private final MessageReceiptRepository mrRepository;
     private final MessageReceiptStateService receiptStateService;
-    private final UserBlockRepository userBlockRepository;
 
     private final OutboxRepository outboxRepository;
-    private final AuditService auditService;
 
     private final RateLimitService rateLimitService;
 
@@ -93,36 +89,9 @@ public class MessageService {
             throw new NotFoundException("No recipients found for the sender");
         }
 
-        var senderBlockedRecipientIds =
-                userBlockRepository.findBlockedRecipientIds(
-                        senderId, recipientIds
-                );
-
-        var recipientsWhoBlockedSender =
-                userBlockRepository.findRecipientsWhoBlockedSender(
-                        senderId,
-                        recipientIds
-                );
-
         var conversation = conversationRepository.findByIdForUpdate(conversationId)
                 .orElseThrow(() ->
                         new NotFoundException("Conversation not found"));
-
-        if (conversation.getType() == ConversationType.DIRECT
-                && (
-                !recipientsWhoBlockedSender.isEmpty()
-                        || !senderBlockedRecipientIds.isEmpty()
-        )) {
-            throw new ConflictException("You cannot send messages to this user");
-        }
-
-        var blockedRecipientIds = new HashSet<>(senderBlockedRecipientIds);
-        blockedRecipientIds.addAll(recipientsWhoBlockedSender);
-
-        var deliverableRecipientIds = recipientIds.stream()
-                .filter(recipientId -> !blockedRecipientIds.contains(recipientId))
-                .toList();
-
 
         long sequenceNumber = conversation.allocateNextMessageSequence();
 
@@ -137,17 +106,11 @@ public class MessageService {
 
         messageRepository.save(message);
 
-        if (!deliverableRecipientIds.isEmpty()) {
-            mrRepository.saveAll(
-                    deliverableRecipientIds.stream()
-                            .map(recipientId ->
-                                    new MessageReceipt(
-                                            message.getId(),
-                                            recipientId
-                                    ))
-                            .toList()
-            );
-        }
+        mrRepository.saveAll(
+                recipientIds.stream()
+                        .map(recipientId -> new MessageReceipt(message.getId(), recipientId))
+                        .toList()
+        );
 
         var response = toResponse(message, ReceiptState.SENT);
 
@@ -159,20 +122,9 @@ public class MessageService {
                         toJson(
                                 new MessageCreatedEvent(
                                         response,
-                                        deliverableRecipientIds
+                                        recipientIds
                                 )
                         )
-                )
-        );
-
-        auditService.record(
-                senderId,
-                EventType.MESSAGE_SENT.name(),
-                ResourceType.MESSAGE.name(),
-                message.getId().toString(),
-                Map.of(
-                        "conversationId", conversationId,
-                        "sequence", sequenceNumber
                 )
         );
 
@@ -224,18 +176,6 @@ public class MessageService {
                                         recipientIds
                                 )
                         )
-                )
-        );
-
-        auditService.record(
-                actorId,
-                EventType.MESSAGE_SENT.name(),
-                ResourceType.MESSAGE.name(),
-                message.getId().toString(),
-                Map.of(
-                        "conversationId", conversationId,
-                        "sequence", sequenceNumber,
-                        "system", true
                 )
         );
 

@@ -2,20 +2,17 @@ package com.aadi.sandesh.service;
 
 import com.aadi.sandesh.domain.ConversationMember;
 import com.aadi.sandesh.domain.UserAccount;
-import com.aadi.sandesh.domain.enums.ConversationType;
 import com.aadi.sandesh.domain.enums.EventType;
 import com.aadi.sandesh.dto.event.RealtimeEvent;
 import com.aadi.sandesh.messaging.RedisRealtimePublisher;
 import com.aadi.sandesh.repository.ConversationMemberRepository;
 import com.aadi.sandesh.repository.ConversationRepository;
 import com.aadi.sandesh.repository.UserAccountRepository;
-import com.aadi.sandesh.repository.UserBlockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,7 +24,6 @@ public class TypingService {
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository memberRepository;
     private final UserAccountRepository userAccountRepository;
-    private final UserBlockRepository userBlockRepository;
     private final RedisRealtimePublisher publisher;
 
     @Transactional(readOnly = true)
@@ -38,8 +34,7 @@ public class TypingService {
     ) {
         membershipService.requireMember(conversationId, actorId);
 
-        var conversation = conversationRepository.findById(conversationId).orElse(null);
-        if (conversation == null) {
+        if (conversationRepository.findById(conversationId).isEmpty()) {
             return;
         }
 
@@ -53,29 +48,13 @@ public class TypingService {
             return;
         }
 
-        var blockedByActor = new HashSet<>(userBlockRepository.findBlockedRecipientIds(actorId, memberUserIds));
-        var blockingActor = new HashSet<>(userBlockRepository.findRecipientsWhoBlockedSender(actorId, memberUserIds));
-
-        if (conversation.getType() == ConversationType.DIRECT && (!blockedByActor.isEmpty() || !blockingActor.isEmpty())) {
-            // Blocked users cannot exchange typing indicators in direct conversations
-            return;
-        }
-
-        var eligibleRecipientIds = memberUserIds.stream()
-                .filter(id -> !blockedByActor.contains(id) && !blockingActor.contains(id))
-                .toList();
-
-        if (eligibleRecipientIds.isEmpty()) {
-            return;
-        }
-
         var actorDisplayName = userAccountRepository.findById(actorId)
                 .map(UserAccount::getDisplayName)
                 .orElse("Someone");
 
         var eventType = typing ? EventType.TYPING_STARTED : EventType.TYPING_STOPPED;
 
-        for (var targetUserId : eligibleRecipientIds) {
+        for (var targetUserId : memberUserIds) {
             publisher.publish(
                     new RealtimeEvent(
                             eventType,

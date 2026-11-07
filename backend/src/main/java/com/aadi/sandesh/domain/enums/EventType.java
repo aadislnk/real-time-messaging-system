@@ -2,7 +2,6 @@ package com.aadi.sandesh.domain.enums;
 
 public enum EventType {
     MESSAGE_CREATED,
-    MESSAGE_SENT,
     MESSAGE_DELIVERED,
     MESSAGE_READ,
 
@@ -13,14 +12,6 @@ public enum EventType {
     CONVERSATION_MEMBER_ADDED,
     CONVERSATION_MEMBER_REMOVED,
 
-    CONVERSATION_DELETED,
-    CONVERSATION_DELETED_FOR_USER,
-
     TYPING_STARTED,
-    TYPING_STOPPED,
-
-    USER_BLOCKED,
-    USER_UNBLOCKED,
-
-    TEST
+    TYPING_STOPPED
 }

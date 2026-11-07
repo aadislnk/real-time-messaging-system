@@ -2,7 +2,6 @@ package com.aadi.sandesh.controller;
 
 import com.aadi.sandesh.dto.event.TypingEvent;
 import com.aadi.sandesh.security.ChatPrincipal;
-import com.aadi.sandesh.service.PresenceService;
 import com.aadi.sandesh.service.TypingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,19 +16,7 @@ import java.util.UUID;
 @Controller
 @RequiredArgsConstructor
 public class ChatWebSocketController {
-    private final PresenceService presenceService;
     private final TypingService typingService;
-
-    @MessageMapping("/presence/heartbeat")
-    public void heartbeat(
-            Principal principal,
-            StompHeaderAccessor accessor
-    ) {
-        presenceService.heartbeat(
-                userId(principal),
-                accessor.getSessionId()
-        );
-    }
 
     @MessageMapping("/conversations/{conversationId}/typing")
     public void typing(

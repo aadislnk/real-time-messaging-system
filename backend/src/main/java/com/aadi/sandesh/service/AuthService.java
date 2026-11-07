@@ -13,14 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuditService auditService;
     private final JwtService jwtService;
 
     @Transactional
@@ -35,14 +32,6 @@ public class AuthService {
                         request.email(),
                         passwordEncoder.encode(request.password())
                 )
-        );
-
-        auditService.record(
-                user.getId(),
-                "USER_REGISTERED",
-                "USER",
-                user.getId().toString(),
-                Map.of("email", user.getEmail())
         );
 
         return response(user);
