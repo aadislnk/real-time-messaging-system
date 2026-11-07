@@ -36,8 +36,6 @@ public class MessageDeliveryWorker {
     private final ObjectMapper objectMapper;
     private final ProcessedEventRepository processedEventRepository;
     private final RedisRealtimePublisher redisRealtimePublisher;
-    private final PresenceService presenceService;
-    private final NotificationService notificationService;
     private final Optional<MeterRegistry> meterRegistry;
 
     private final String streamKey;
@@ -50,8 +48,6 @@ public class MessageDeliveryWorker {
             ObjectMapper objectMapper,
             ProcessedEventRepository processedEventRepository,
             RedisRealtimePublisher redisRealtimePublisher,
-            PresenceService presenceService,
-            NotificationService notificationService,
             @Value("${sandesh.messaging.stream-key}") String streamKey,
             @Value("${sandesh.messaging.consumer-group}") String consumerGroup,
             @Value("${sandesh.messaging.consumer-name}") String consumerName,
@@ -61,8 +57,6 @@ public class MessageDeliveryWorker {
         this.objectMapper = objectMapper;
         this.processedEventRepository = processedEventRepository;
         this.redisRealtimePublisher = redisRealtimePublisher;
-        this.presenceService = presenceService;
-        this.notificationService = notificationService;
         this.streamKey = streamKey;
         this.consumerGroup = consumerGroup;
         this.consumerName = consumerName;
@@ -188,13 +182,7 @@ public class MessageDeliveryWorker {
                                 Instant.now()
                         );
 
-                        // Realtime event must always be published regardless of presence
                         redisRealtimePublisher.publish(realtimeEvent);
-
-                        // Presence only determines whether offline notification is also sent
-                        if (!presenceService.isOnline(recipientId)) {
-                            notificationService.notifyOfflineUser(recipientId, event.message());
-                        }
                     }
                 }
 

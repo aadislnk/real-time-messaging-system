@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
@@ -31,14 +30,11 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
     private final List<String> allowedOrigins;
-    private final Environment environment;
 
     public SecurityConfig(
             @Value("${sandesh.websocket.allowed-origins:http://localhost:4173,http://localhost:4200}")
-            String allowedOrigins,
-            Environment environment) {
+            String allowedOrigins) {
         this.allowedOrigins = Arrays.asList(allowedOrigins.split(","));
-        this.environment = environment;
     }
 
     @Bean
@@ -62,8 +58,6 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             ObjectMapper objectMapper
     ) throws Exception {
-        boolean isDevOrTest = environment.matchesProfiles("dev", "test");
-
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -104,10 +98,6 @@ public class SecurityConfig {
                             .requestMatchers("/", "/index.html", "/demo.css", "/demo.js", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
-
-                    if (isDevOrTest) {
-                        auth.requestMatchers("/test/**").permitAll();
-                    }
 
                     auth.anyRequest().authenticated();
                 })

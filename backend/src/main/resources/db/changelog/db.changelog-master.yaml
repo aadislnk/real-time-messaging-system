@@ -108,3 +108,13 @@ databaseChangeLog:
             relativeToChangelogFile: false
             splitStatements: true
             stripComments: true
+
+  - changeSet:
+      id: 012-remove-device-registration
+      author: sandesh
+      changes:
+        - sqlFile:
+            path: db/changelog/012-remove-device-registration.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true
