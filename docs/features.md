@@ -1,0 +1,127 @@
+# Sandesh Features
+
+- User registration with display name, email, and password validation.
+- Case-insensitive duplicate-email detection during registration.
+- BCrypt password hashing with a cost factor of 12.
+- User login with credential verification for enabled accounts.
+- Stateless JWT access-token authentication with configurable token lifetime.
+- JWT claims containing the authenticated user ID and email.
+- Frontend session persistence in browser local storage.
+- Automatic frontend logout when the access token expires.
+- Automatic frontend logout when a protected API request receives an unauthorized response.
+- Protected and public-only route handling for the login, registration, and chat pages.
+- User directory search by display name or email.
+- Case-insensitive user search with the current user excluded from results.
+- User directory result limit of 50 users.
+- Direct conversation creation between exactly two users.
+- Group conversation creation with at least three members.
+- Automatic addition of the conversation creator as the owner.
+- Conversation type support for direct and group conversations.
+- Optional group title creation with a 120-character limit.
+- Duplicate direct-conversation detection and reuse.
+- Conversation membership validation for all protected conversation operations.
+- Conversation list retrieval for the authenticated user.
+- Individual conversation detail retrieval.
+- Conversation list ordering by membership join time.
+- Latest visible message preview on conversation responses.
+- Group member addition by owners and administrators.
+- New members starting after the existing conversation history.
+- Group member removal by owners and administrators.
+- Prevention of self-removal through the member-removal operation.
+- Prevention of group-owner removal.
+- Group title renaming by owners and administrators.
+- Prevention of direct-conversation renaming.
+- System messages for group creation, member joining, member removal, and group renaming.
+- Per-user conversation hiding without deleting shared conversation history.
+- Permanent group deletion by the group owner.
+- Realtime removal events when a user hides a conversation or is removed.
+- Realtime removal events for every member when a group is permanently deleted.
+- Text message sending with a 4,000-character content limit.
+- Client-generated message ID support for reliable retries.
+- Idempotent message retries using sender, conversation, client ID, and content matching.
+- Conflict detection when a client message ID is reused with different content or conversation.
+- Prevention of sending messages when no current recipient exists.
+- Per-user message rate limiting with a configurable messages-per-minute limit.
+- Monotonic per-conversation message sequence numbers.
+- Message types for user text messages and system messages.
+- Sequence-based message synchronization with cursor support.
+- Latest-message page retrieval when no sequence cursor is supplied.
+- Incremental message retrieval after a supplied sequence number.
+- Message page size clamping between 1 and 100 messages.
+- Pagination metadata with next sequence cursor and has-more indicator.
+- Hidden-history filtering after a user hides and later accesses a conversation.
+- Sender-only aggregate message receipt state.
+- Delivery receipt acknowledgement.
+- Read receipt acknowledgement.
+- Monotonic receipt transitions from sent to delivered to read.
+- Conversation member last-read sequence tracking.
+- Idempotent repeated delivery and read acknowledgements.
+- Receipt-state recalculation when a recipient is removed.
+- Realtime message-created events for message recipients.
+- Realtime message-delivered events for message senders.
+- Realtime message-read events for message senders.
+- Authenticated message search across visible user conversations.
+- Newest-first message search results.
+- Search result size clamping between 1 and 50 messages.
+- STOMP WebSocket connection support at the configurable `/ws` endpoint.
+- JWT validation during the STOMP connection handshake.
+- User-targeted realtime event subscription through `/user/queue/events`.
+- Realtime conversation-created events.
+- Realtime conversation-updated events.
+- Realtime conversation-removed events.
+- Client-to-server typing notifications through conversation-specific STOMP destinations.
+- Realtime typing-started and typing-stopped notifications to other conversation members.
+- Five-second typing-indicator expiry metadata.
+- Non-persistent typing state.
+- Redis-backed realtime event publishing.
+- Transactional outbox records for message and conversation events.
+- Scheduled outbox polling and publication to a Redis stream.
+- Redis consumer-group based realtime delivery processing.
+- Delivery event idempotency through processed-event tracking.
+- Pending Redis event recovery for the current consumer.
+- Claiming and retrying stale events from failed consumers.
+- Poison-event validation and dead-letter acknowledgement behavior.
+- Retry scheduling for transient outbox publication failures.
+- Permanent failure tracking after exhausted outbox retries.
+- Optional Micrometer metrics for publishing, processing, retries, errors, and dead letters.
+- PostgreSQL persistence through Spring Data JPA.
+- Liquibase-managed database schema migrations.
+- UTC timestamp handling for persistence and API responses.
+- Configurable database connection-pool sizing and connection timeout.
+- Graceful server shutdown with a configurable shutdown phase timeout.
+- Stateless Spring Security session policy.
+- CSRF disabled for the stateless API.
+- Configurable CORS origins, methods, headers, exposed headers, credentials, and cache duration.
+- Public authentication, WebSocket handshake, health, and info endpoints.
+- Structured JSON API errors with status, code, message, path, timestamp, and field violations.
+- Consistent validation errors for malformed request bodies, invalid fields, parameters, and paths.
+- Frontend login form with inline validation and backend error display.
+- Frontend registration form with inline validation and backend field-error display.
+- Frontend responsive conversation sidebar with mobile navigation controls.
+- Frontend conversation selection and active-chat state.
+- Frontend direct-chat naming from the other member's display name.
+- Frontend group-chat naming and member-count display.
+- Frontend conversation creation dialog with direct/group selection.
+- Frontend debounced user search while creating or managing conversations.
+- Frontend selected-user management for conversation creation.
+- Frontend conversation-management dialog for renaming, adding members, removing members, hiding, and deleting groups.
+- Frontend role-aware display of group management controls.
+- Frontend optimistic message rendering while a message is being sent.
+- Frontend message reconciliation by client message ID and server message ID.
+- Frontend failed-message state with retry action.
+- Frontend live message status display for sending, sent, delivered, and read states.
+- Frontend automatic read acknowledgement for received messages displayed in the active conversation.
+- Frontend message composer with 4,000-character counter and Enter-to-send behavior.
+- Frontend Shift+Enter support for multiline message composition.
+- Frontend typing notifications while composing with automatic stop notification.
+- Frontend animated typing indicator for other participants.
+- Frontend realtime connection status display.
+- Frontend automatic STOMP reconnect with increasing reconnect delay.
+- Frontend conversation and message resynchronization after realtime reconnect.
+- Frontend cross-conversation message search dialog.
+- Frontend search-result navigation to the matching conversation.
+- Frontend loading, empty, error, toast, and connection-state UI handling.
+- Frontend API request abstraction with JSON serialization and bearer-token headers.
+- Frontend abortable user-search requests.
+- Frontend API error normalization for network, HTTP, validation, unauthorized, conflict, and rate-limit failures.
+- Frontend Vite development, production build, preview, and Vitest test scripts.

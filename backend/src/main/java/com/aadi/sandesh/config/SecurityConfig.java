@@ -30,11 +30,13 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
     private final List<String> allowedOrigins;
+    private final String webSocketEndpoint;
 
     public SecurityConfig(
-            @Value("${sandesh.websocket.allowed-origins:http://localhost:4173,http://localhost:4200}")
-            String allowedOrigins) {
-        this.allowedOrigins = Arrays.asList(allowedOrigins.split(","));
+            AllowedOrigins allowedOrigins,
+            @Value("${sandesh.websocket.endpoint:/ws}") String webSocketEndpoint) {
+        this.allowedOrigins = allowedOrigins.values();
+        this.webSocketEndpoint = webSocketEndpoint;
     }
 
     @Bean
@@ -94,7 +96,7 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/api/auth/**", "/ws/**").permitAll()
+                    auth.requestMatchers("/api/auth/**", webSocketEndpoint + "/**").permitAll()
                             .requestMatchers("/", "/index.html", "/demo.css", "/demo.js", "/favicon.ico").permitAll()
                             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();

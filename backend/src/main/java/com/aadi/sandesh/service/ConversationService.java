@@ -154,51 +154,7 @@ public class ConversationService {
                         )
                 );
 
-        var latestSequences = messageRepository
-                .findLatestSequences(conversationsIds)
-                .stream()
-                .collect(
-                        Collectors.toMap(
-                                row -> (UUID) row[0],
-                                row -> ((Number) row[1]).longValue()
-                        )
-                );
-
         return conversations.stream()
-                .filter(conversation -> {
-                    var conversationMembers =
-                            membersByConversation.getOrDefault(
-                                    conversation.getId(),
-                                    List.of()
-                            );
-
-                    var membership = conversationMembers.stream()
-                            .filter(member -> member.userId().equals(userId))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (membership == null) {
-                        return false;
-                    }
-
-                    long latestSequence = latestSequences.getOrDefault(
-                            conversation.getId(),
-                            0L
-                    );
-
-                    boolean hidden =
-                            membership.hiddenAfterSequence() != null
-                                    && latestSequence <= membership.hiddenAfterSequence();
-
-                    if (!hidden) {
-                        return true;
-                    }
-
-                    return conversation.getType() == ConversationType.GROUP
-                            || conversation.getCreatedBy().equals(userId)
-                            || latestSequence > 0;
-
-                })
                 .map(conversation -> {
                     var conversationMembers = membersByConversation.getOrDefault(
                             conversation.getId(),
@@ -251,16 +207,7 @@ public class ConversationService {
             throw new ConflictException("User is already a member");
         }
 
-        long latestSequence = messageRepository
-                .findTopByConversationIdOrderBySequenceNumberDesc(
-                        conversationId
-                )
-                .map(Message::getSequenceNumber)
-                .orElse(0L);
-
         var newMember = new ConversationMember(conversationId, request.userId(), request.role());
-
-        newMember.softHideAt(latestSequence);
 
         convMemberRepository.save(newMember);
 
@@ -451,15 +398,7 @@ public class ConversationService {
             return;
         }
 
-        var latestSequence =
-                messageRepository
-                        .findTopByConversationIdOrderBySequenceNumberDesc(conversationId)
-                        .map(Message::getSequenceNumber)
-                        .orElse(0L);
-
-        actor.softHideAt(latestSequence);
-
-        convMemberRepository.save(actor);
+        convMemberRepository.delete(actor);
 
         conversationEventService.conversationRemoved(
                 actorId,

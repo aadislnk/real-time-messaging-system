@@ -37,8 +37,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
         cm.userId,
         u.displayName,
         cm.role,
-        cm.lastReadSequence,
-        cm.hiddenAfterSequence
+        cm.lastReadSequence
     )
     FROM ConversationMember cm
     JOIN UserAccount u ON u.id = cm.userId

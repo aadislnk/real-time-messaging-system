@@ -13,9 +13,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
 
 @Service
 @RequiredArgsConstructor
@@ -50,27 +53,12 @@ public class MessageQueryService {
                 .map(ConversationMember::getUserId)
                 .toList();
 
-        long hiddenAfterSequence =
-                member.getHiddenAfterSequence() == null
-                        ? 0L
-                        : member.getHiddenAfterSequence();
-
         var pageable = PageRequest.of(0, pageSize);
 
         if (afterSequence > 0) {
-            /*
-            afterSequence = 10
-            hiddenAfterSequence = 20
-             */
-
-            long effectiveAfterSequence = Math.max(
-                    afterSequence,
-                    hiddenAfterSequence
-            );
-
-            var slice = messageRepository.findVisibleMessagesAfterSequence(
+            var slice = messageRepository.findMessagesAfterSequence(
                     conversationId,
-                    effectiveAfterSequence,
+                    afterSequence,
                     pageable
             );
 
@@ -91,9 +79,8 @@ public class MessageQueryService {
             );
         }
 
-        var slice = messageRepository.findLatestVisibleMessages(
+        var slice = messageRepository.findLatestMessages(
                 conversationId,
-                hiddenAfterSequence,
                 pageable
         );
 

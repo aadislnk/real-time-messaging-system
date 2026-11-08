@@ -27,7 +27,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
                     and m.sequenceNumber > :afterSequence
                         order by m.sequenceNumber asc
             """)
-    Slice<Message> findVisibleMessagesAfterSequence(
+    Slice<Message> findMessagesAfterSequence(
             @Param("conversationId") UUID conversationId,
             @Param("afterSequence") long afterSequence,
             Pageable pageable
@@ -36,12 +36,10 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     @Query("""
             select m from Message m 
                 where m.conversationId = :conversationId
-                    and m.sequenceNumber > :hiddenAfterSequence
                         order by m.sequenceNumber desc
             """)
-    Slice<Message> findLatestVisibleMessages(
+    Slice<Message> findLatestMessages(
             @Param("conversationId") UUID conversationId,
-            @Param("hiddenAfterSequence") long hiddenAfterSequence,
             Pageable pageable
     );
 
@@ -71,12 +69,10 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
                                     on cm.conversationId = m.conversationId
                                             and cm.userId = :userId
                    where m.conversationId in :conversationIds
-                      and m.sequenceNumber > coalesce(cm.hiddenAfterSequence, 0)
                      and m.sequenceNumber = (
-                        select max(m2.sequenceNumber)
-                                    from Message m2
-                                      where m2.conversationId = m.conversationId
-                                         and m2.sequenceNumber > coalesce(cm.hiddenAfterSequence, 0)
+                       select max(m2.sequenceNumber)
+                                   from Message m2
+                                     where m2.conversationId = m.conversationId
                         )
             
             """)

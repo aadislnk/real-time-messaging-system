@@ -14,11 +14,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final String[] allowedOrigins;
     private final WebSocketAuthInterceptor authInterceptor;
+    private final String endpoint;
 
     public WebSocketConfig(
-            @Value("${sandesh.websocket.allowed-origins}")
-            String allowedOrigins, WebSocketAuthInterceptor authInterceptor) {
-        this.allowedOrigins = allowedOrigins.split(",");
+            AllowedOrigins allowedOrigins,
+            @Value("${sandesh.websocket.endpoint:/ws}") String endpoint,
+            WebSocketAuthInterceptor authInterceptor) {
+        this.allowedOrigins = allowedOrigins.values().toArray(String[]::new);
+        this.endpoint = endpoint;
         this.authInterceptor = authInterceptor;
     }
 
@@ -26,7 +29,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(
             StompEndpointRegistry registry
     ) {
-        registry.addEndpoint("/ws")
+        registry.addEndpoint(endpoint)
                 .setAllowedOrigins(allowedOrigins);
     }
 

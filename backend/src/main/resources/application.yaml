@@ -6,6 +6,9 @@ spring:
   application:
     name: sandesh-backend
 
+  config:
+    import: optional:file:.env[.properties]
+
   web:
     error:
       include-message: never
@@ -55,6 +58,10 @@ spring:
     default-property-inclusion: non_null
 
 sandesh:
+  # Explicit browser origins used by REST CORS and the STOMP handshake.
+  # SANDESH_WS_ALLOWED_ORIGINS is retained as a legacy fallback.
+  allowed-origins: ${SANDESH_ALLOWED_ORIGINS:${SANDESH_WS_ALLOWED_ORIGINS:http://localhost:4173,http://localhost:4200,http://localhost:5173}}
+
   security:
     jwt-secret: ${SANDESH_JWT_SECRET}
     access-token-ttl: ${SANDESH_ACCESS_TOKEN_TTL:7d}
@@ -67,7 +74,7 @@ sandesh:
     outbox-poll-delay-ms: 100
     delivery-poll-delay-ms: 100
   websocket:
-    allowed-origins: ${SANDESH_WS_ALLOWED_ORIGINS:http://localhost:4173,http://localhost:4200}
+    endpoint: ${SANDESH_WEBSOCKET_ENDPOINT:/ws}
 
   rate-limit:
     messages-per-minute: ${SANDESH_RATE_LIMIT_MESSAGES_PER_MINUTE:60}

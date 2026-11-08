@@ -10,6 +10,7 @@ pgadmin/
 
 HELP.md
 target/
+out/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 
@@ -35,6 +36,7 @@ target/
 /nbdist/
 /.nb-gradle/
 build/
+coverage/
 !**/src/main/**/build/
 
 ### VS Code ###

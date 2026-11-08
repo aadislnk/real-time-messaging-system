@@ -37,9 +37,6 @@ public class ConversationMember {
     @Column(name = "muted_until")
     private Instant mutedUntil;
 
-    @Column(name = "hidden_after_sequence")
-    private Long hiddenAfterSequence;
-
     public ConversationMember(UUID conversationId, UUID userId, MemberRole role) {
         this.id = UUID.randomUUID();
         this.conversationId = conversationId;
@@ -61,13 +58,4 @@ public class ConversationMember {
         lastReadSequence = Math.max(lastReadSequence, sequence);
     }
 
-    public void softHideAt(long latestSequence) {
-        if (hiddenAfterSequence == null || latestSequence > hiddenAfterSequence) {
-            hiddenAfterSequence = latestSequence;
-        }
-    }
-
-    public boolean isHiddenFor(long latestSequence) {
-        return hiddenAfterSequence != null && latestSequence <= hiddenAfterSequence;
-    }
 }
